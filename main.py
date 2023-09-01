@@ -51,6 +51,13 @@ if __name__ == '__main__':
 
     while True:
         packet = conn.read_packet()
+
+        if packet.id == 0x03:  # set compression
+            packet.set_structure({
+                'threshold': VarInt
+            })
+            conn.compression_threshold = packet.threshold
+
         if packet.id == 0x32:  # player info
             packet.set_structure({
                 'action': VarInt
