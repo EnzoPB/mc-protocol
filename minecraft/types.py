@@ -136,3 +136,23 @@ class UUID(MCType):
     @staticmethod
     def decode(stream: io.IOBase) -> uuid.UUID:
         return uuid.UUID(bytes=stream.read(16))
+
+
+types_names = {
+    'bool': Boolean,
+    'i8': Byte,
+    'u8': UByte,
+    'i16': Short,
+    'u16': UShort,
+    'i32': Int,
+    'u32': UInt,
+    'i64': Long,
+    'u64': ULong,
+    'f32': Float,
+    'f64': Double,
+    'varint': VarInt,
+    'varlong': VarLong,
+    'string': String,
+    'json': Json,
+    'UUID': UUID
+}

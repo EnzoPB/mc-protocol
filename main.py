@@ -5,6 +5,7 @@ from minecraft.types import *
 
 if __name__ == '__main__':
     conn = Connection('enzopb.me')
+    conn.state = 'status'
 
     # status handshake packet
     hs = PacketBuilder(0x00)  # packet id
@@ -21,8 +22,9 @@ if __name__ == '__main__':
     conn.send(req)
 
     status = conn.read_packet()
-    status.set_structure({
-        'json_data': Json
+    status.decode_field({
+        'name': 'json_data',
+        'type': 'json'
     })
 
     protocol = status.json_data['version']['protocol']
@@ -31,6 +33,8 @@ if __name__ == '__main__':
     conn.close()
 
     conn = Connection('enzopb.me')
+    conn.set_protocol_version(protocol)
+    conn.state = 'login'
 
     # login handshake packet
     hs = PacketBuilder(0x00)  # packet id
@@ -51,23 +55,14 @@ if __name__ == '__main__':
 
     while True:
         packet = conn.read_packet()
+        packet.decode()
 
-        if packet.id == 0x03:  # set compression
-            packet.set_structure({
-                'threshold': VarInt
-            })
+        print(packet.data)
+
+        if packet.id == 0x02 and conn.state == 'login':
+            conn.state = 'play'
+
+        if packet.id == 0x03 and conn.state == 'login':  # set compression
             conn.compression_threshold = packet.threshold
-
-        if packet.id == 0x32:  # player info
-            packet.set_structure({
-                'action': VarInt
-            })
-            if packet.action == 0:  # add player
-                packet.set_structure({
-                    'number_of_players': VarInt,
-                    'uuid': UUID,
-                    'username': String
-                })
-                print(packet.uuid, packet.username)
 
     conn.close()

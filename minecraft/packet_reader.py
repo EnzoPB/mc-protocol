@@ -3,11 +3,19 @@ import select
 import zlib
 from typing import Type
 
+import minecraft_data
+
 from .types import *
 
 class PacketReader:
-    def __init__(self, stream: io.IOBase, compression_threshold: int = -1) -> None:
+    data: dict
+
+    def __init__(self, stream: io.IOBase, state: str, compression_threshold: int = -1, mc_data: Type[minecraft_data.mod] = None) -> None:
+        self.state = state
         self.stream = stream
+        self.mc_data = mc_data
+        self.data = {}
+
         # wait until there is data to read
         ready_to_read = False
         while not ready_to_read:
@@ -31,18 +39,51 @@ class PacketReader:
 
         self.id = VarInt.decode(self.stream)  # decode the packet id
 
-    def set_structure(self, structure: dict[str, Type[MCType]]) -> None:
+    name: str
+
+    def decode(self) -> None:
+        if self.mc_data is None and self.state is not None:
+            return
+
+        formatted_id = f'{self.id:#04x}'  # we need the id to be a string of format 0x00
+        try:
+            # get the packet name from its id
+            self.name = self.mc_data.protocol[self.state]['toClient']['types']['packet'][1][0]['type'][1]['mappings'][formatted_id]
+        except (ValueError, KeyError):  # failed to get the packet name
+            raise InvalidPacket(f'Failed to get packet name from id {formatted_id}')
+
+        try:
+            # get the packet structure from its name
+            structure = self.mc_data.protocol[self.state]['toClient']['types'][f'packet_{self.name}'][1]
+            for field in structure:
+                # if the type of the field is unknown, ignore the rest of the packet
+                if type(field['type']) != str or field['type'] not in types_names:
+                    print(f'could not decode type {field["type"]}')
+                    break
+
+                self.decode_field(field)
+
+        except (ValueError, KeyError):  # failed to get the packet name
+            raise InvalidPacket(f'Failed to get packet structure from name {self.name} and id {formatted_id}')
+
+        except (ValueError, KeyError):  # failed to get the packet, can be unknown, bad version or something else
+            return
+
+    def decode_field(self, structure: dict[str, str]) -> None:
         # structure is a dict with the format:
         # {
-        #  'field name': type class
+        #   'name': 'field name',
+        #   'type': 'field type (see types.types_names)'
         # }
         # for example:
         # {
-        #  'field1': VarInt,
-        #  'field2': Json
+        #   'name': 'field1',
+        #   'type': 'i64'
         # }
-        for field_name in structure:
-            # so for each field, we decode the data using the correct type and set it as an attribute for this class
-            field_type = structure[field_name]
-            value = field_type.decode(self.stream)
-            setattr(self, field_name, value)
+        value = types_names[structure['type']].decode(self.stream)
+        setattr(self, structure['name'], value)
+        self.data[structure['name']] = value
+
+
+class InvalidPacket(Exception):
+    pass
