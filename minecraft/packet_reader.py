@@ -4,6 +4,7 @@ import zlib
 from typing import Type
 
 import minecraft_data
+minecraft_data.data_folder = 'minecraft-data/data'
 
 from .types import *
 
@@ -58,8 +59,7 @@ class PacketReader:
             for field in structure:
                 # if the type of the field is unknown, ignore the rest of the packet
                 if type(field['type']) != str or field['type'] not in types_names:
-                    print(f'could not decode type {field["type"]}')
-                    break
+                    raise InvalidPacket(f'Could not decode type {field["type"]}')
 
                 self.decode_field(field)
 

@@ -1,10 +1,11 @@
 from minecraft.packet_builder import PacketBuilder
+from minecraft.packet_reader import InvalidPacket
 from minecraft.connection import Connection
 from minecraft.types import *
 
 
 if __name__ == '__main__':
-    conn = Connection('enzopb.me')
+    conn = Connection('localhost')
     conn.state = 'status'
 
     # status handshake packet
@@ -32,7 +33,7 @@ if __name__ == '__main__':
     # we have to re-open a new connection to initiate the login state
     conn.close()
 
-    conn = Connection('enzopb.me')
+    conn = Connection('localhost')
     conn.set_protocol_version(protocol)
     conn.state = 'login'
 
@@ -49,13 +50,19 @@ if __name__ == '__main__':
     # login packet
     login = PacketBuilder(0x00)  # packet id
     login.set_structure([
-        ('Notch', String)  # username
+        ('Notch', String),  # username
+        #(False, Boolean),  # has sig data
+        (False, Boolean)  # has player uuid
     ])
     conn.send(login)
 
     while True:
         packet = conn.read_packet()
-        packet.decode()
+        try:
+            packet.decode()
+        except InvalidPacket as e:
+            print(e)
+
 
         print(packet.data)
 

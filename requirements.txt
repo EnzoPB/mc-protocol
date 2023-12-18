@@ -1,1 +1,1 @@
-minecraft-data==3.20.0
+minecraft_data_standalone==3.21.0
