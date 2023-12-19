@@ -3,16 +3,12 @@ import json
 import struct
 import uuid
 
-class MCType:  # only used for typing
-    @staticmethod
-    def encode(value: any) -> bytearray:
-        pass
+from .errors import *
 
-    @staticmethod
-    def decode(stream: io.IOBase) -> any:
-        pass
+class MCNativeType:  # only used for typing
+    pass
 
-class Boolean(MCType):
+class Boolean(MCNativeType):
     @staticmethod
     def encode(value: bool) -> bytearray:
         return bytearray([value])
@@ -21,7 +17,7 @@ class Boolean(MCType):
     def decode(stream: io.IOBase) -> bool:
         return stream.read(1) == 0x1
 
-class Int(MCType):
+class Int(MCNativeType):
     size = 4  # size of the number type in bytes
     signed = True
 
@@ -54,7 +50,7 @@ class Long(Int):
 class ULong(Long):
     signed = False
 
-class Float(MCType):
+class Float(MCNativeType):
     @staticmethod
     def encode(value: float) -> bytearray:
         return bytearray(struct.pack('>f', value))
@@ -73,7 +69,7 @@ class Double:
         return struct.unpack('>d', stream.read(8))[0]
 
 
-class VarNum(MCType):
+class VarNum(MCNativeType):
     max_bytes: int
 
     @classmethod
@@ -104,7 +100,7 @@ class VarInt(VarNum):
 class VarLong(VarNum):
     max_bytes = 10
 
-class String(MCType):
+class String(MCNativeType):
     @staticmethod
     def decode(stream: io.IOBase) -> str:
         length = VarInt.decode(stream)  # before every string, there is a varint containing its length
@@ -120,7 +116,7 @@ class String(MCType):
             buffer.extend(bytes([ord(char)]))
         return buffer
 
-class Json(MCType):
+class Json(MCNativeType):
     @staticmethod
     def decode(stream: io.IOBase) -> dict:
         string = String.decode(stream)
@@ -132,10 +128,56 @@ class Json(MCType):
         return String.encode(json_data)
 
 
-class UUID(MCType):
+class UUID(MCNativeType):
     @staticmethod
     def decode(stream: io.IOBase) -> uuid.UUID:
         return uuid.UUID(bytes=stream.read(16))
+
+    @staticmethod
+    def encode(value: str | uuid.UUID) -> bytearray:
+        if isinstance(value, str):
+            return bytearray(uuid.UUID(value).bytes)
+        elif isinstance(value, uuid.UUID):
+            return bytearray(value.bytes)
+
+
+class MCSpecialType:  # only used for typing
+    pass
+
+class Option(MCSpecialType):  # optional field
+    @staticmethod
+    def encode(data: any, data_part: list):
+        buffer = bytearray()
+        # an optional field is composed of a boolean (is the data is defined or not?) and then the data, if it is defined
+        if data is None:  # data is not defined
+            return Boolean.encode(False)  # we only send false (the data is not defined)
+        else:  # data is defined
+            buffer.extend(Boolean.encode(True))  # yes, the data is defined
+            data_type = types_names[data_part[1]]  # find the type corresponding to the data
+            buffer.extend(data_type.encode(data))  # encode it into the buffer
+            return buffer
+
+
+def encode_field(data: dict, data_part: dict) -> bytearray:  # automatically decode a field
+    if isinstance(data_part['type'], str):  # type can either be a string (native type)
+        try:
+            var_type = types_names[data_part['type']]  # get the corresponding type class
+        except KeyError:
+            raise UnknownType('Tried to decode unknown type: ' + data_part['type'])
+        try:
+            return var_type.encode(data[data_part['name']])
+        except KeyError as e:
+            raise InvalidPacketStructure(f'Cannot find key {e} in packet data')
+
+    elif isinstance(data_part['type'], list):  # or type can be a list (more complex type)
+        try:
+            var_type = types_names[data_part['type'][0]]  # get the corresponding type class
+        except KeyError:
+            raise UnknownType('Tried to decode unknown type: ' + data_part['type'])
+        try:
+            return var_type.encode(data[data_part['name']], data_part['type'])
+        except KeyError as e:
+            raise InvalidPacketStructure(f'Cannot find key {e} in packet data')
 
 
 types_names = {
@@ -154,5 +196,7 @@ types_names = {
     'varlong': VarLong,
     'string': String,
     'json': Json,
-    'UUID': UUID
+    'UUID': UUID,
+
+    'option': Option
 }

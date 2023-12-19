@@ -1,7 +1,7 @@
 from typing import Type
 import minecraft_data
 
-from .types import types_names, VarInt
+from .types import types_names, VarInt, encode_field
 from .errors import UnknownPacket, UnknownType, InvalidPacketStructure
 
 
@@ -9,6 +9,8 @@ def find_packet_id_from_name(packet_name: str, mc_data: Type[minecraft_data.mod]
     for id, name in mc_data.protocol[state]['toServer']['types']['packet'][1][0]['type'][1]['mappings'].items():
         if name == packet_name:
             return int(id, 16)
+
+
 
 
 def encode_packet(packet: str | list[dict], data: dict, state: str, mc_data: Type[minecraft_data.mod]) -> bytearray:
@@ -23,16 +25,8 @@ def encode_packet(packet: str | list[dict], data: dict, state: str, mc_data: Typ
         structure = packet
         buffer = bytearray()
 
-    for part in structure:
-        try:
-            var_type = types_names[part['type']]
-        except KeyError:
-            raise UnknownType('Tried to decode unknown type: ' + part['type'])
-
-        try:
-            buffer.extend(var_type.encode(data[part['name']]))
-        except KeyError as e:
-            raise InvalidPacketStructure(f'Cannot find key {e} in packet data')
+    for data_type in structure:
+        buffer.extend(encode_field(data, data_type))
 
     length = VarInt.encode(len(buffer))
     buffer = length + buffer

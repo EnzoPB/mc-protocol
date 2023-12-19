@@ -45,16 +45,10 @@ if __name__ == '__main__':
     conn.state = 'login'
 
     # login packet
-    conn.send_packet([
-        {'type': 'varint', 'name': 'id'},
-        {'type': 'string', 'name': 'username'},
-        {'type': 'bool', 'name': 'hasuuid'}
-    ], {
-        'id': 0x00,
-        'username': 'Notch',
-        'hasuuid': False
+    conn.send_packet('login_start', {
+        'username': 'caca',
+        'playerUUID': 'be3370e3-ad3d-4635-aaf7-f7165668e8fc'
     })
-
 
     while True:
         packet = conn.read_packet()
@@ -65,10 +59,9 @@ if __name__ == '__main__':
 
         print(packet.data)
 
-        if packet.id == 0x02 and conn.state == 'login':
+        if packet.name == 'success' and conn.state == 'login':
             conn.state = 'play'
 
-        if packet.id == 0x03 and conn.state == 'login':  # set compression
-            conn.compression_threshold = packet.threshold
 
-    conn.close()
+        if packet.name == 'compress' and conn.state == 'login':  # set compression
+            conn.compression_threshold = packet.threshold
