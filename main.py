@@ -1,26 +1,23 @@
-from minecraft.packet_builder import PacketBuilder
-from minecraft.packet_reader import InvalidPacket
+from minecraft.errors import UnknownPacket
 from minecraft.connection import Connection
-from minecraft.types import *
 
 
 if __name__ == '__main__':
     conn = Connection('localhost')
-    conn.state = 'status'
+    conn.state = 'handshaking'
 
     # status handshake packet
-    hs = PacketBuilder(0x00)  # packet id
-    hs.set_structure([
-        (0, VarInt),  # protocol version (0 for ping)
-        ('domain', String),  # address (can be anything)
-        (25565, Short),  # port (can be anything)
-        (1, VarInt)  # next state (1 for status)
-    ])
-    conn.send(hs)
+    conn.send_packet('set_protocol', {
+        'protocolVersion': 0,
+        'serverHost': 'domain',
+        'serverPort': 25565,
+        'nextState': 1
+    })
+
+    conn.state = 'status'
 
     # status request packet
-    req = PacketBuilder(0x00)  # packet id
-    conn.send(req)
+    conn.send_packet('ping_start', {})
 
     status = conn.read_packet()
     status.decode_field({
@@ -28,41 +25,43 @@ if __name__ == '__main__':
         'type': 'json'
     })
 
-    protocol = status.json_data['version']['protocol']
+    protocol = status.data['json_data']['version']['protocol']
 
     # we have to re-open a new connection to initiate the login state
     conn.close()
 
     conn = Connection('localhost')
     conn.set_protocol_version(protocol)
-    conn.state = 'login'
+    conn.state = 'handshaking'
 
     # login handshake packet
-    hs = PacketBuilder(0x00)  # packet id
-    hs.set_structure([
-        (protocol, VarInt),  # protocol version (that we got from the status request)
-        ('domain', String),  # address (can be anything)
-        (25565, UShort),  # port (can be anything)
-        (2, VarInt)  # next state (2 for login)
-    ])
-    conn.send(hs)
+    conn.send_packet('set_protocol', {
+        'protocolVersion': protocol,
+        'serverHost': 'domain',
+        'serverPort': 25565,
+        'nextState': 2
+    })
+
+    conn.state = 'login'
 
     # login packet
-    login = PacketBuilder(0x00)  # packet id
-    login.set_structure([
-        ('Notch', String),  # username
-        #(False, Boolean),  # has sig data
-        (False, Boolean)  # has player uuid
-    ])
-    conn.send(login)
+    conn.send_packet([
+        {'type': 'varint', 'name': 'id'},
+        {'type': 'string', 'name': 'username'},
+        {'type': 'bool', 'name': 'hasuuid'}
+    ], {
+        'id': 0x00,
+        'username': 'Notch',
+        'hasuuid': False
+    })
+
 
     while True:
         packet = conn.read_packet()
         try:
             packet.decode()
-        except InvalidPacket as e:
+        except UnknownPacket as e:
             print(e)
-
 
         print(packet.data)
 

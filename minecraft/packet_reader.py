@@ -2,10 +2,9 @@ import io
 import select
 import zlib
 from typing import Type
-
 import minecraft_data
-minecraft_data.data_folder = 'minecraft-data/data'
 
+from .errors import UnknownPacket
 from .types import *
 
 class PacketReader:
@@ -51,7 +50,7 @@ class PacketReader:
             # get the packet name from its id
             self.name = self.mc_data.protocol[self.state]['toClient']['types']['packet'][1][0]['type'][1]['mappings'][formatted_id]
         except (ValueError, KeyError):  # failed to get the packet name
-            raise InvalidPacket(f'Failed to get packet name from id {formatted_id}')
+            raise UnknownPacket(f'Failed to get packet name from id {formatted_id}')
 
         try:
             # get the packet structure from its name
@@ -59,12 +58,12 @@ class PacketReader:
             for field in structure:
                 # if the type of the field is unknown, ignore the rest of the packet
                 if type(field['type']) != str or field['type'] not in types_names:
-                    raise InvalidPacket(f'Could not decode type {field["type"]}')
+                    raise UnknownPacket(f'Could not decode type {field["type"]}')
 
                 self.decode_field(field)
 
         except (ValueError, KeyError):  # failed to get the packet name
-            raise InvalidPacket(f'Failed to get packet structure from name {self.name} and id {formatted_id}')
+            raise UnknownPacket(f'Failed to get packet structure from name {self.name} and id {formatted_id}')
 
         except (ValueError, KeyError):  # failed to get the packet, can be unknown, bad version or something else
             return
@@ -83,7 +82,3 @@ class PacketReader:
         value = types_names[structure['type']].decode(self.stream)
         setattr(self, structure['name'], value)
         self.data[structure['name']] = value
-
-
-class InvalidPacket(Exception):
-    pass
