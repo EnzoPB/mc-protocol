@@ -57,11 +57,16 @@ if __name__ == '__main__':
         except UnknownPacket as e:
             print(e)
 
-        print(packet.data)
+        print(packet.name, packet.data)
 
-        if packet.name == 'success' and conn.state == 'login':
-            conn.state = 'play'
+        if conn.state == 'play':
+            if packet.name == 'keep_alive':
+                conn.send_packet('keep_alive', {
+                    'keepAliveId': packet.keepAliveId
+                })
 
-
-        if packet.name == 'compress' and conn.state == 'login':  # set compression
-            conn.compression_threshold = packet.threshold
+        if conn.state == 'login':
+            if packet.name == 'compress':  # set compression
+                conn.compression_threshold = packet.threshold
+            if packet.name == 'success':
+                conn.state = 'play'

@@ -21,7 +21,7 @@ class Connection:
         return PacketReader(self.stream, self.state, self.compression_threshold, self.mc_data)
 
     def send_packet(self, packet: str | list[dict], data: dict) -> None:
-        self.socket.send(encode_packet(packet, data, self.state, self.mc_data))
+        self.socket.send(encode_packet(packet, data, self.state, self.mc_data, self.compression_threshold))
 
     def set_protocol_version(self, protocol_version: int) -> None:
         # first we search for the minecraft version corresponding to the protocol version
