@@ -44,21 +44,23 @@ def encode_field(data: dict, data_part: dict | list) -> bytearray:  # automatica
             return buffer
     else:
         if isinstance(data_part['type'], str):  # type can either be a string (native type)
-            try:
+            if data_part['type'] in types_names:
                 var_type: MCNativeType = types_names[data_part['type']]  # get the corresponding type class
-            except KeyError:
+            else:
                 raise UnknownType(f'Tried to encode unknown type: {data_part["type"]}')
-            try:
+
+            if data_part['name'] in data:
                 return var_type.encode(data[data_part['name']])
-            except KeyError as e:
-                raise InvalidPacketStructure(f'Cannot find key {e} in packet data')
+            else:
+                raise InvalidPacketStructure(f'Cannot find key "{data_part["name"]}" in packet data {data}')
 
         elif isinstance(data_part['type'], list):  # or type can be a list (more complex type)
-            try:
+            if data_part['type'][0] in types_names:
                 var_type: MCSpecialType = types_names[data_part['type'][0]]  # get the corresponding type class
-            except KeyError:
+            else:
                 raise UnknownType(f'Tried to encode unknown type: {data_part["type"]}')
-            try:
+
+            if data_part['name'] in data:
                 return var_type.encode(data[data_part['name']], data_part['type'])
-            except KeyError as e:
-                raise InvalidPacketStructure(f'Cannot find key {e} in packet data', data)
+            else:
+                raise InvalidPacketStructure(f'Cannot find key "{data_part["name"]}" in packet data {data}')
