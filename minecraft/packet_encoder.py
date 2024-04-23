@@ -12,8 +12,6 @@ def find_packet_id_from_name(packet_name: str, mc_data: Type[minecraft_data.mod]
             return int(id, 16)
 
 
-
-
 def encode_packet(packet: str | list[dict], data: dict, state: str, mc_data: Type[minecraft_data.mod], compression_threshold: int) -> bytearray:
     if isinstance(packet, str):
         try:

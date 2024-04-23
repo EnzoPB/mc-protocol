@@ -1,2 +1,4 @@
 class MCSpecialType:  # only used for typing
-    pass
+    @staticmethod
+    def encode(data: any, data_part: list) -> bytearray:
+        pass
