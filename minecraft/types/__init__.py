@@ -47,7 +47,7 @@ def encode_field(data: dict, data_part: dict | list) -> bytearray:  # automatica
             try:
                 var_type: MCNativeType = types_names[data_part['type']]  # get the corresponding type class
             except KeyError:
-                raise UnknownType(f'Tried to decode unknown type: {data_part["type"]}')
+                raise UnknownType(f'Tried to encode unknown type: {data_part["type"]}')
             try:
                 return var_type.encode(data[data_part['name']])
             except KeyError as e:
@@ -57,7 +57,7 @@ def encode_field(data: dict, data_part: dict | list) -> bytearray:  # automatica
             try:
                 var_type: MCSpecialType = types_names[data_part['type'][0]]  # get the corresponding type class
             except KeyError:
-                raise UnknownType(f'Tried to decode unknown type: {data_part["type"]}')
+                raise UnknownType(f'Tried to encode unknown type: {data_part["type"]}')
             try:
                 return var_type.encode(data[data_part['name']], data_part['type'])
             except KeyError as e:
