@@ -10,6 +10,7 @@ from .json import Json
 from .uuid import UUID
 
 from .option import Option
+from .buffer import Buffer
 
 from ..errors import *
 
@@ -31,7 +32,8 @@ types_names = {
     'json': Json,
     'UUID': UUID,
 
-    'option': Option
+    'option': Option,
+    'buffer': Buffer
 }
 
 
