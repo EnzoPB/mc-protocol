@@ -31,7 +31,6 @@ class PacketReader:
 
         if compression_threshold != -1:  # threshold of -1 means no compression
             data_length = VarInt.decode(self.stream)  # size of the uncompressed data
-            print(data_length)
             if data_length != 0 and data_length >= compression_threshold:  # if the packet is longer than the treshold, it is compressed
                 decompressed_data = zlib.decompress(self.stream.read())
                 if data_length != len(decompressed_data):

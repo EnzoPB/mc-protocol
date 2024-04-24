@@ -1,6 +1,8 @@
 from minecraft.errors import UnknownPacket
 from minecraft.connection import Connection
 
+import uuid
+
 
 if __name__ == '__main__':
     conn = Connection('ddns.enzopb.me', 25566)
@@ -44,10 +46,18 @@ if __name__ == '__main__':
 
     conn.state = 'login'
 
+    username = 'test'
+
+    # generate player's UUID from username (offline mode)
+    # equivalent of Java's nameUUIDFromBytes
+    class OfflinePlayerNamespace:
+        bytes = b'OfflinePlayer:'
+    player_uuid = uuid.uuid3(OfflinePlayerNamespace, username)
+
     # login packet
     conn.send_packet('login_start', {
-        'username': 'caca',
-        'playerUUID': 'be3370e3-ad3d-4635-aaf7-f7165668e8fc'
+        'username': username,
+        'playerUUID': None
     })
 
     while True:
