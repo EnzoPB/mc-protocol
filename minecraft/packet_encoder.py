@@ -12,7 +12,11 @@ def find_packet_id_from_name(packet_name: str, mc_data: Type[minecraft_data.mod]
             return int(id, 16)
 
 
-def encode_packet(packet: str | list[dict], data: dict, state: str, mc_data: Type[minecraft_data.mod], compression_threshold: int) -> bytearray:
+def encode_packet(packet: str | list[dict],
+                  data: dict | None,
+                  state: str,
+                  mc_data: Type[minecraft_data.mod],
+                  compression_threshold: int) -> bytearray:
     if isinstance(packet, str):
         try:
             packet_key = mc_data.protocol[state]['toServer']['types']['packet'][1][1]['type'][1]['fields'][packet]
@@ -24,8 +28,9 @@ def encode_packet(packet: str | list[dict], data: dict, state: str, mc_data: Typ
         structure = packet
         buffer = bytearray()
 
-    for data_type in structure:
-        buffer.extend(encode_field(data, data_type))
+    if data is not None:
+        for data_type in structure:
+            buffer.extend(encode_field(data, data_type))
 
     if compression_threshold != -1:  # threshold of -1 means no compression
         if len(buffer) > compression_threshold:  # if the packet is longer than the treshold, it is compressed

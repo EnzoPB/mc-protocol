@@ -2,7 +2,7 @@
 # and then try to decode & log every packet it receives from the server,
 # while sending keep alive packets to avoid getting kicked by the server
 
-from minecraft.errors import UnknownPacket, InvalidPacketStructure
+from minecraft.errors import UnknownPacket, InvalidPacketStructure, UnknownType
 from minecraft.connection import Connection
 
 import uuid
@@ -69,6 +69,8 @@ if __name__ == '__main__':
         'playerUUID': player_uuid
     })
 
+
+    respawned = False
     while True:
         packet = conn.read_packet()
         try:
@@ -86,9 +88,23 @@ if __name__ == '__main__':
                 conn.send_packet('keep_alive', {
                     'keepAliveId': packet.data['keepAliveId']
                 })
+            if not respawned:
+                respawned = True
+                conn.send_packet('client_command', {
+                    'actionId': 0
+                })
 
         if conn.state == 'login':
             if packet.name == 'compress':  # set compression
                 conn.compression_threshold = packet.data['threshold']
             if packet.name == 'success':
+                if protocol >= 764:  # >= 1.20.2
+                    conn.send_packet('login_acknowledged')
+                    conn.state = 'configuration'
+                else:
+                    conn.state = 'play'
+
+        if conn.state == 'configuration':  # >= 1.20.2
+            if packet.name == 'finish_configuration':
+                conn.send_packet('finish_configuration')
                 conn.state = 'play'

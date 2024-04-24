@@ -20,7 +20,7 @@ class Connection:
     def read_packet(self) -> PacketReader:
         return PacketReader(self.stream, self.state, self.compression_threshold, self.mc_data)
 
-    def send_packet(self, packet: str | list[dict], data: dict) -> None:
+    def send_packet(self, packet: str | list[dict], data: dict = None) -> None:
         self.socket.send(encode_packet(packet, data, self.state, self.mc_data, self.compression_threshold))
 
     def set_protocol_version(self, protocol_version: int) -> None:
