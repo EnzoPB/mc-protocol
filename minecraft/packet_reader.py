@@ -41,7 +41,7 @@ class PacketReader:
 
     name: str
 
-    def decode(self) -> None:
+    def decode(self, structure: list = None) -> None:
         if self.mc_data is None and self.state is not None:
             return
 
@@ -53,14 +53,14 @@ class PacketReader:
             raise UnknownPacket(f'Failed to get packet name from id {formatted_id}')
 
         try:
-            # get the packet structure from its name
-            structure = self.mc_data.protocol[self.state]['toClient']['types'][f'packet_{self.name}'][1]
-            for field in structure:
-                # if the type of the field is unknown, ignore the rest of the packet
-                if type(field['type']) != str or field['type'] not in types_names:
-                    raise UnknownPacket(f'Could not decode type {field["type"]}')
+            if structure is None:
+                # get the packet structure from its name
+                structure = self.mc_data.protocol[self.state]['toClient']['types'][f'packet_{self.name}'][1]
 
-                self.decode_field(field)
+            for field in structure:
+                field_value = self.decode_field(field)
+                setattr(self, field['name'], field_value)
+                self.data[field['name']] = field_value
 
         except (ValueError, KeyError):  # failed to get the packet name
             raise UnknownPacket(f'Failed to get packet structure from name {self.name} and id {formatted_id}')
@@ -68,7 +68,7 @@ class PacketReader:
         except (ValueError, KeyError):  # failed to get the packet, can be unknown, bad version or something else
             return
 
-    def decode_field(self, structure: dict[str, str]) -> None:
+    def decode_field(self, structure):
         # structure is a dict with the format:
         # {
         #   'name': 'field name',
@@ -79,6 +79,10 @@ class PacketReader:
         #   'name': 'field1',
         #   'type': 'i64'
         # }
-        value = types_names[structure['type']].decode(self.stream)
-        setattr(self, structure['name'], value)
-        self.data[structure['name']] = value
+        if isinstance(structure['type'], str):
+            if structure['type'] in types_names:
+                return types_names[structure['type']].decode(self.stream)
+            else:
+                raise UnknownType(f'Could not decode type {structure["type"]}')
+        else:
+            raise InvalidPacketStructure(f'Field type if of invalid type "{type(structure["type"])}"')

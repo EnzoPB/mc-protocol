@@ -1,4 +1,4 @@
-from minecraft.errors import UnknownPacket
+from minecraft.errors import UnknownPacket, InvalidPacketStructure
 from minecraft.connection import Connection
 
 import uuid
@@ -22,12 +22,12 @@ if __name__ == '__main__':
     conn.send_packet('ping_start', {})
 
     status = conn.read_packet()
-    status.decode_field({
-        'name': 'json_data',
+    status.decode([{
+        'name': 'response',
         'type': 'json'
-    })
+    }])
 
-    protocol = status.data['json_data']['version']['protocol']
+    protocol = status.data['response']['version']['protocol']
 
     # we have to re-open a new connection to initiate the login state
     conn.close()
@@ -57,19 +57,19 @@ if __name__ == '__main__':
     # login packet
     conn.send_packet('login_start', {
         'username': username,
-        'playerUUID': None
+        'playerUUID': player_uuid
     })
 
     while True:
         packet = conn.read_packet()
         try:
             packet.decode()
-        except UnknownPacket as e:
+        except (UnknownPacket, InvalidPacketStructure) as e:
             print(e)
 
         print(packet.name, packet.data)
 
-        if packet.name == 'disconnect':
+        if packet.name == 'disconnect' or packet.name == 'kick_disconnect':
             exit()
 
         if conn.state == 'play':

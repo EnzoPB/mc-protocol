@@ -78,3 +78,6 @@ def encode_field(data: dict, data_part: dict | list) -> bytearray:  # automatica
                 return var_type.encode(data[data_part['name']], data_part['type'])
             else:
                 raise InvalidPacketStructure(f'Cannot find key "{data_part["name"]}" in packet data {data}')
+
+        else:
+            raise InvalidPacketStructure(f'Field type if of invalid type "{data_part["type"]}"')
