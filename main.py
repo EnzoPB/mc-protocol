@@ -3,7 +3,7 @@ from minecraft.connection import Connection
 
 
 if __name__ == '__main__':
-    conn = Connection('localhost')
+    conn = Connection('ddns.enzopb.me', 25566)
     conn.state = 'handshaking'
 
     # status handshake packet
@@ -30,7 +30,7 @@ if __name__ == '__main__':
     # we have to re-open a new connection to initiate the login state
     conn.close()
 
-    conn = Connection('localhost')
+    conn = Connection('ddns.enzopb.me', 25566)
     conn.set_protocol_version(protocol)
     conn.state = 'handshaking'
 
@@ -58,6 +58,9 @@ if __name__ == '__main__':
             print(e)
 
         print(packet.name, packet.data)
+
+        if packet.name == 'disconnect':
+            exit()
 
         if conn.state == 'play':
             if packet.name == 'keep_alive':
