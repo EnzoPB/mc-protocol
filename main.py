@@ -1,11 +1,21 @@
+# This is a small example script that connects to a server,
+# and then try to decode & log every packet it receives from the server,
+# while sending keep alive packets to avoid getting kicked by the server
+
 from minecraft.errors import UnknownPacket, InvalidPacketStructure
 from minecraft.connection import Connection
 
 import uuid
-
+import sys
 
 if __name__ == '__main__':
-    conn = Connection('ddns.enzopb.me', 25566)
+    if len(sys.argv) < 3:
+        print('Usage: python3 main.py username host [port]\nExample: python3 main.py bot 127.0.0.1 25565')
+    username = sys.argv[1]
+    host = sys.argv[2]
+    port = int(sys.argv[3]) if len(sys.argv) > 3 else 25565
+
+    conn = Connection(host, port)
     conn.state = 'handshaking'
 
     # status handshake packet
@@ -32,7 +42,7 @@ if __name__ == '__main__':
     # we have to re-open a new connection to initiate the login state
     conn.close()
 
-    conn = Connection('ddns.enzopb.me', 25566)
+    conn = Connection(host, port)
     conn.set_protocol_version(protocol)
     conn.state = 'handshaking'
 
@@ -45,8 +55,6 @@ if __name__ == '__main__':
     })
 
     conn.state = 'login'
-
-    username = 'test'
 
     # generate player's UUID from username (offline mode)
     # equivalent of Java's nameUUIDFromBytes
