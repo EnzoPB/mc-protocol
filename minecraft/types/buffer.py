@@ -2,7 +2,7 @@ from .mc_special_type import MCSpecialType
 from .boolean import Boolean
 
 
-class Buffer(MCSpecialType):  # optional field
+class Buffer(MCSpecialType):
     @staticmethod
     def encode(data: bytearray, data_part: list) -> bytearray:
         buffer = bytearray()

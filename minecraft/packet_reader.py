@@ -4,8 +4,8 @@ import zlib
 from typing import Type
 import minecraft_data
 
-from .errors import UnknownPacket
 from .types import *
+
 
 class PacketReader:
     data: dict
@@ -55,12 +55,10 @@ class PacketReader:
         try:
             if structure is None:
                 # get the packet structure from its name
-                structure = self.mc_data.protocol[self.state]['toClient']['types'][f'packet_{self.name}'][1]
+                structure = self.mc_data.protocol[self.state]['toClient']['types'][f'packet_{self.name}']
 
-            for field in structure:
-                field_value = self.decode_field(field)
-                setattr(self, field['name'], field_value)
-                self.data[field['name']] = field_value
+            field_value = PacketReader.decode_field(self.stream, structure)
+            self.data = field_value
 
         except (ValueError, KeyError):  # failed to get the packet name
             raise UnknownPacket(f'Failed to get packet structure from name {self.name} and id {formatted_id}')
@@ -68,21 +66,35 @@ class PacketReader:
         except (ValueError, KeyError):  # failed to get the packet, can be unknown, bad version or something else
             return
 
-    def decode_field(self, structure):
-        # structure is a dict with the format:
-        # {
-        #   'name': 'field name',
-        #   'type': 'field type (see types.types_names)'
-        # }
-        # for example:
-        # {
-        #   'name': 'field1',
-        #   'type': 'i64'
-        # }
-        if isinstance(structure['type'], str):
-            if structure['type'] in types_names:
-                return types_names[structure['type']].decode(self.stream)
+    @staticmethod
+    def decode_field(stream: io.IOBase, structure: str | list):
+        # special type (container, array, buffer, etc...)
+        # eg. structure = [
+        #   'container',
+        #   [
+        #       {'name': 'field', type: 'varint'}
+        #       {'name': 'field2', type: 'string'}
+        #   ]
+        # ]
+        if isinstance(structure, list):
+            if structure[0] in types_names:
+                return types_names[structure[0]].decode(stream, structure[1])
+            elif structure[0] == 'container':
+                container = {}
+                for field_structure in structure[1]:
+                    container[field_structure['name']] = PacketReader.decode_field(stream, field_structure['type'])
+                return container
             else:
-                raise UnknownType(f'Could not decode type {structure["type"]}')
+                raise UnknownType(f'Could not decode type {structure[0]}')
+
+        # native type (int, string, boolean, etc...)
+        # eg. structure = 'i32'
+        elif isinstance(structure, str):
+            if structure in types_names:
+                return types_names[structure].decode(stream)
+            else:
+                raise UnknownType(f'Could not decode type {structure}')
+
         else:
-            raise InvalidPacketStructure(f'Field type if of invalid type "{type(structure["type"])}"')
+            raise InvalidPacketStructure(f'Invalid structure type "{type(structure)}"')
+

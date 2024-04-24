@@ -32,10 +32,11 @@ if __name__ == '__main__':
     conn.send_packet('ping_start', {})
 
     status = conn.read_packet()
-    status.decode([{
+    # custom packet structure, otherwise the response is interpreted as string, and we have to decode json manually
+    status.decode(['container', [{
         'name': 'response',
         'type': 'json'
-    }])
+    }]])
 
     protocol = status.data['response']['version']['protocol']
 
@@ -72,7 +73,7 @@ if __name__ == '__main__':
         packet = conn.read_packet()
         try:
             packet.decode()
-        except (UnknownPacket, InvalidPacketStructure) as e:
+        except (UnknownPacket, InvalidPacketStructure, UnknownType) as e:
             print(e)
 
         print(packet.name, packet.data)
@@ -83,11 +84,11 @@ if __name__ == '__main__':
         if conn.state == 'play':
             if packet.name == 'keep_alive':
                 conn.send_packet('keep_alive', {
-                    'keepAliveId': packet.keepAliveId
+                    'keepAliveId': packet.data['keepAliveId']
                 })
 
         if conn.state == 'login':
             if packet.name == 'compress':  # set compression
-                conn.compression_threshold = packet.threshold
+                conn.compression_threshold = packet.data['threshold']
             if packet.name == 'success':
                 conn.state = 'play'

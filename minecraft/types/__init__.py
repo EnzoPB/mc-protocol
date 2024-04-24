@@ -11,6 +11,7 @@ from .uuid import UUID
 
 from .option import Option
 from .buffer import Buffer
+from .array import Array
 
 from ..errors import *
 
@@ -33,7 +34,8 @@ types_names = {
     'UUID': UUID,
 
     'option': Option,
-    'buffer': Buffer
+    'buffer': Buffer,
+    'array': Array
 }
 
 
