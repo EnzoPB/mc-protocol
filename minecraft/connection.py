@@ -28,7 +28,11 @@ class Connection:
         for version in minecraft_data.common().protocolVersions:
             if version['version'] == protocol_version:
                 # once we found it we get the data corresponding to the minecraft version
-                self.mc_data = minecraft_data(version['minecraftVersion'])
+                try:
+                    self.mc_data = minecraft_data(version['minecraftVersion'])
+                except KeyError:  # some versions are referenced by their major versions number only in minecraft-data, eg. 1.8.9 => 1.8
+                    major_version = '.'.join(version['minecraftVersion'].split('.')[:-1])
+                    self.mc_data = minecraft_data(major_version)
                 return
 
         raise UnsupportedVersionError(f'Minecraft protocol version {protocol_version} is not supported')
