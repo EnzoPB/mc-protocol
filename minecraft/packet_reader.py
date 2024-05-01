@@ -11,16 +11,21 @@ from .errors import TimeoutReached
 class PacketReader:
     data: dict
 
-    def __init__(self, stream: io.IOBase, state: str, compression_threshold: int = -1, mc_data: Type[minecraft_data.mod] = None) -> None:
+    def __init__(self,
+                 stream: io.IOBase,
+                 state: str,
+                 compression_threshold: int = -1,
+                 mc_data: Type[minecraft_data.mod] = None,
+                 timeout: float = 1) -> None:
         self.state = state
         self.stream = stream
         self.mc_data = mc_data
         self.data = {}
 
         # wait until there is data to read
-        ready = select.select([self.stream], [], [], 1)[0]
+        ready = select.select([self.stream], [], [], timeout)[0]
         if len(ready) == 0:
-            raise TimeoutReached
+            raise TimeoutReached('Timeout reached while reading')
 
         length = VarInt.decode(self.stream)  # get the size of the packet
 
