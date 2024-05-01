@@ -5,6 +5,7 @@ from typing import Type
 import minecraft_data
 
 from .types import *
+from .errors import TimeoutReached
 
 
 class PacketReader:
@@ -17,9 +18,9 @@ class PacketReader:
         self.data = {}
 
         # wait until there is data to read
-        ready_to_read = False
-        while not ready_to_read:
-            ready_to_read = select.select([self.stream], [], [], 0.1)[0]
+        ready = select.select([self.stream], [], [], 1)[0]
+        if len(ready) == 0:
+            raise TimeoutReached
 
         length = VarInt.decode(self.stream)  # get the size of the packet
 

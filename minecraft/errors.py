@@ -8,3 +8,7 @@ class UnknownType(Exception):
 
 class InvalidPacketStructure(Exception):
     pass
+
+
+class TimeoutReached(Exception):
+    pass
