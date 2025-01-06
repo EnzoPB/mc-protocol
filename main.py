@@ -108,3 +108,20 @@ if __name__ == '__main__':
             if packet.name == 'finish_configuration':
                 conn.send_packet('finish_configuration')
                 conn.state = 'play'
+            if packet.name == 'select_known_packs':
+                # server_known_packs serverbound packet missing from minecraft-data?
+                # have to do it manually :(
+                conn.send_packet(
+                    [
+                        {
+                            'name': 'packetid',
+                            'type': 'varint'
+                        },
+                        {
+                            'name': 'length',
+                            'type': 'varint'
+                        }
+                    ], {
+                        'packetid': 0x07,
+                        'length': 0
+                    })

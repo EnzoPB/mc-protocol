@@ -23,7 +23,7 @@ class Connection:
 
         self.timeout = timeout
         minecraft_data.data_folder = data_folder
-        self.mc_data = minecraft_data('1.20')
+        self.mc_data = minecraft_data('1.21')
 
     def read_packet(self) -> PacketReader:
         return PacketReader(self.stream, self.state, self.compression_threshold, self.mc_data, self.timeout)
