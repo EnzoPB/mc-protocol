@@ -2,8 +2,6 @@ import socket
 from typing import Type
 import minecraft_data
 
-minecraft_data.data_folder = 'minecraft-data/data'
-
 from .errors import TimeoutReached
 from .packet_reader import PacketReader
 from .packet_encoder import encode_packet
@@ -11,9 +9,9 @@ from .packet_encoder import encode_packet
 class Connection:
     compression_threshold: int = -1  # compression disabled by default
     state: str
-    mc_data: Type[minecraft_data.mod] = minecraft_data('1.20')
+    mc_data: Type[minecraft_data.mod]
 
-    def __init__(self, server_address: str, server_port: int = 25565, timeout: float = 1) -> None:
+    def __init__(self, server_address: str, server_port: int = 25565, timeout: float = 1, data_folder: str = './minecraft-data/data') -> None:
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.socket.settimeout(timeout)
         try:
@@ -22,7 +20,10 @@ class Connection:
             raise TimeoutReached('Timeout reached while connecting')
         self.socket.settimeout(None)
         self.stream = self.socket.makefile('rb', 0)
+
         self.timeout = timeout
+        minecraft_data.data_folder = data_folder
+        self.mc_data = minecraft_data('1.20')
 
     def read_packet(self) -> PacketReader:
         return PacketReader(self.stream, self.state, self.compression_threshold, self.mc_data, self.timeout)

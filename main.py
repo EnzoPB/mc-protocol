@@ -43,7 +43,7 @@ if __name__ == '__main__':
     # we have to re-open a new connection to initiate the login state
     conn.close()
 
-    conn = Connection(host, port)
+    conn = Connection(host, port, timeout=3)
     conn.set_protocol_version(protocol)
     conn.state = 'handshaking'
 

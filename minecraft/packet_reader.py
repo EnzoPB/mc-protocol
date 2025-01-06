@@ -55,22 +55,18 @@ class PacketReader:
         try:
             # get the packet name from its id
             self.name = self.mc_data.protocol[self.state]['toClient']['types']['packet'][1][0]['type'][1]['mappings'][formatted_id]
-        except (ValueError, KeyError):  # failed to get the packet name
+        except:  # failed to get the packet name
             raise UnknownPacket(f'Failed to get packet name from id {formatted_id}')
 
         try:
             if structure is None:
                 # get the packet structure from its name
                 structure = self.mc_data.protocol[self.state]['toClient']['types'][f'packet_{self.name}']
-
-            field_value = PacketReader.decode_field(self.stream, structure)
-            self.data = field_value
-
-        except (ValueError, KeyError):  # failed to get the packet name
+        except:  # failed to get the packet name
             raise UnknownPacket(f'Failed to get packet structure from name {self.name} and id {formatted_id}')
 
-        except (ValueError, KeyError):  # failed to get the packet, can be unknown, bad version or something else
-            return
+        field_value = PacketReader.decode_field(self.stream, structure)
+        self.data = field_value
 
     @staticmethod
     def decode_field(stream: io.IOBase, structure: str | list):
