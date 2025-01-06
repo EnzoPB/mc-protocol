@@ -11,9 +11,9 @@ class Boolean(MCNativeType):
     def decode(stream: io.IOBase) -> bool:
         value = stream.read(1)
         match value:
-            case 0x1:
+            case b'\x01':
                 return True
-            case 0x0:
+            case b'\x00':
                 return False
             case _:
                 raise ValueError(f'Incorrect boolean value: {value}')
