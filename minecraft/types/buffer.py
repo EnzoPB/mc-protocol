@@ -1,5 +1,8 @@
 from .mc_special_type import MCSpecialType
 import io
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from minecraft.packet_reader import PacketReader
 
 
 class Buffer(MCSpecialType):
@@ -12,7 +15,7 @@ class Buffer(MCSpecialType):
         return buffer
 
     @staticmethod
-    def decode(stream: io.IOBase, structure: any) -> bytearray:
+    def decode(stream: io.IOBase, structure: any, packet: 'PacketReader') -> bytearray:
         from . import types_names
         length = types_names[structure['countType']].decode(stream)
         data = stream.read(length)

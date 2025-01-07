@@ -1,6 +1,9 @@
 from .mc_special_type import MCSpecialType
 from .boolean import Boolean
 import io
+from typing import TYPE_CHECKING
+if TYPE_CHECKING:
+    from minecraft.packet_reader import PacketReader
 
 
 class Option(MCSpecialType):  # optional field
@@ -17,7 +20,6 @@ class Option(MCSpecialType):  # optional field
             return buffer
 
     @staticmethod # ['container', [{'name': 'dimensionName', 'type': 'string'}, {'name': 'location', 'type': 'position'}]]
-    def decode(stream: io.IOBase, structure: str | list):
+    def decode(stream: io.IOBase, structure: str | list, packet: 'PacketReader'):
         if Boolean.decode(stream):  # present?
-            from ..packet_reader import PacketReader  # import this here (not at top) to avoid circular import loop
-            return PacketReader.decode_field(stream, structure)
+            return packet.decode_field(stream, structure)
