@@ -73,12 +73,14 @@ if __name__ == '__main__':
     respawned = False
     while True:
         packet = conn.read_packet()
+        print('----packet begin', hex(packet.id))
         try:
             packet.decode()
         except (UnknownPacket, InvalidPacketStructure, UnknownType) as e:
             print(e)
 
         print(packet.name, packet.data)
+
 
         if packet.name == 'disconnect' or packet.name == 'kick_disconnect':
             exit()

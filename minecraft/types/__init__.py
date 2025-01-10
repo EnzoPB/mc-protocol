@@ -9,9 +9,12 @@ from .string import String
 from .json import Json
 from .uuid import UUID
 
+from .container import Container
+from .switch import Switch
 from .option import Option
 from .buffer import Buffer
 from .array import Array
+from .bitfield import BitField
 
 from ..errors import *
 
@@ -33,9 +36,12 @@ types_names = {
     'json': Json,
     'UUID': UUID,
 
+    'container': Container,
+    'switch': Switch,
     'option': Option,
     'buffer': Buffer,
-    'array': Array
+    'array': Array,
+    'bitfield': BitField
 }
 
 
