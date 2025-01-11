@@ -69,11 +69,9 @@ if __name__ == '__main__':
         'playerUUID': player_uuid
     })
 
-
-    respawned = False
+    respawned = True
     while True:
         packet = conn.read_packet()
-        print('----packet begin', hex(packet.id))
         try:
             packet.decode()
         except (UnknownPacket, InvalidPacketStructure, UnknownType) as e:

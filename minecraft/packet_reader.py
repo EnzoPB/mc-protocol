@@ -28,11 +28,11 @@ class PacketReader:
 
         length = types.VarInt.decode(self.stream)  # get the size of the packet
 
-        data = self.stream.read(length)  # read the actual packet data
-        while len(data) < length:  # sometimes the rest of the data hasn't been transmited yet
-            data += stream.read(length - len(data))  # so we try to read what is missing
+        self.raw_data = self.stream.read(length)  # read the actual packet data
+        while len(self.raw_data) < length:  # sometimes the rest of the data hasn't been transmited yet
+            self.raw_data += stream.read(length - len(self.raw_data))  # so we try to read what is missing
 
-        self.stream = io.BytesIO(data)  # get the actual data, and store it as a stream
+        self.stream = io.BytesIO(self.raw_data)  # get the actual data, and store it as a stream
 
         if compression_threshold != -1:  # threshold of -1 means no compression
             data_length = types.VarInt.decode(self.stream)  # size of the uncompressed data
@@ -40,6 +40,7 @@ class PacketReader:
                 decompressed_data = zlib.decompress(self.stream.read())
                 if data_length != len(decompressed_data):
                     raise zlib.error('Incorrect uncompressed data length')
+                self.raw_data = decompressed_data
                 self.stream = io.BytesIO(decompressed_data)  # rewrite a new stream with the uncompressed data
 
         self.id = types.VarInt.decode(self.stream)  # decode the packet id
@@ -103,7 +104,6 @@ class PacketReader:
         try:
             # get the packet name from its id
             self.name = self.mc_data.protocol[self.state]['toClient']['types']['packet'][1][0]['type'][1]['mappings'][formatted_id]
-            print('name:', self.name)
         except (IndexError, KeyError):  # failed to get the packet name
             raise errors.UnknownPacket(f'Failed to get packet name from id {formatted_id}')
 
@@ -139,8 +139,10 @@ class PacketReader:
         # native type (int, string, boolean, etc...)
         # eg. structure = 'i32'
         elif isinstance(structure, str):
-            if structure in types.types_names:
+            if structure in types.types_names:  # native type
                 self.dict_path_set(self.data, self.current_path, types.types_names[structure].decode(stream))
+            elif structure in self.mc_data.protocol['types'] and not isinstance(self.mc_data.protocol['types'][structure], str):
+                self.decode_field(stream, self.mc_data.protocol['types'][structure])
             else:
                 raise errors.UnknownType(f'Could not decode type {structure}')
 
