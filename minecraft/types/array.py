@@ -18,11 +18,11 @@ class Array(MCSpecialType):
         # or the count is given in a field earlier
         elif 'count' in structure:
             count = packet.dict_relative_path_get(packet.data, packet.current_path, structure['count'])
-        array = []
+
         # decode each element of the array
+        # TODO: arrays are actually decoded as dict with number keys
         for i in range(count):
+            # for each of the arrays element, enter the path, decode the value, exit the path
             packet.current_path.append(i)
-            print('array enter', i, packet.current_path)
-            array.append(packet.decode_field(stream, structure['type']))
+            packet.decode_field(stream, structure['type'])
             packet.current_path.pop()
-            print('array exit', i, packet.current_path)
